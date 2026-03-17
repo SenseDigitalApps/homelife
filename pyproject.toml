@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medsync-api"
+version = "0.1.0"
+description = "MedSync backend API built with Django and DRF."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "django>=5.0",
+  "djangorestframework>=3.15",
+  "djangorestframework-simplejwt>=5.3",
+  "psycopg[binary]>=3.1",
+  "python-dotenv>=1.0",
+  "django-environ>=0.11",
+  "drf-spectacular>=0.27",
+  "cryptography>=42.0",
+  "gunicorn>=21.2",
+  "whitenoise>=6.6",
+]
+
+[project.optional-dependencies]
+async = [
+  "celery",
+  "redis",
+]
+dev = [
+  "black>=24.0",
+  "ruff>=0.6",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = "app/.*\\.pyi?$"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
