@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Device
+from .models import Device, DeviceProfile
 
 
 class DeviceSerializer(serializers.ModelSerializer):
@@ -17,3 +17,20 @@ class DeviceSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "user", "created_at", "updated_at")
+
+
+class DeviceProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceProfile
+        fields = (
+            "id",
+            "name",
+            "device_type",
+            "manufacturer",
+            "model_name",
+            "protocol",
+            "ble_service_uuid",
+            "ble_characteristic_uuid",
+            "supported_parameters",
+            "is_active",
+        )

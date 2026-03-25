@@ -67,3 +67,47 @@ class RecommendationEnginesTests(TestCase):
         )
         self.assertEqual(result.engine, "rules")
         self.assertIn("15 days", result.text)
+
+    def test_rules_engine_spo2_levels(self):
+        rules = RulesEngine()
+        normal = rules.generate_immediate("spo2", 97, "%")
+        preventive = rules.generate_immediate("spo2", 93, "%")
+        critical = rules.generate_immediate("spo2", 88, "%")
+
+        self.assertEqual(normal.level, "normal")
+        self.assertEqual(preventive.level, "preventive")
+        self.assertEqual(critical.level, "critical")
+
+    def test_rules_engine_pulse_rate_levels(self):
+        rules = RulesEngine()
+        normal = rules.generate_immediate("pulse_rate", 75, "bpm")
+        preventive_low = rules.generate_immediate("pulse_rate", 55, "bpm")
+        preventive_high = rules.generate_immediate("pulse_rate", 110, "bpm")
+        critical_low = rules.generate_immediate("pulse_rate", 45, "bpm")
+        critical_high = rules.generate_immediate("pulse_rate", 125, "bpm")
+
+        self.assertEqual(normal.level, "normal")
+        self.assertEqual(preventive_low.level, "preventive")
+        self.assertEqual(preventive_high.level, "preventive")
+        self.assertEqual(critical_low.level, "critical")
+        self.assertEqual(critical_high.level, "critical")
+
+    def test_rules_engine_pi_index_levels(self):
+        rules = RulesEngine()
+        normal = rules.generate_immediate("pi_index", 3.5, "%")
+        preventive = rules.generate_immediate("pi_index", 0.5, "%")
+        critical = rules.generate_immediate("pi_index", 0.2, "%")
+
+        self.assertEqual(normal.level, "normal")
+        self.assertEqual(preventive.level, "preventive")
+        self.assertEqual(critical.level, "critical")
+
+    def test_rules_engine_hrv_levels(self):
+        rules = RulesEngine()
+        normal = rules.generate_immediate("hrv", 25, "ms")
+        preventive = rules.generate_immediate("hrv", 15, "ms")
+        critical = rules.generate_immediate("hrv", 8, "ms")
+
+        self.assertEqual(normal.level, "normal")
+        self.assertEqual(preventive.level, "preventive")
+        self.assertEqual(critical.level, "critical")

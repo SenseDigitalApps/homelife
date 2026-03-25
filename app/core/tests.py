@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from devices.models import Device
+from devices.models import Device, DeviceProfile
 from recommendations.models import Recommendation
 
 
@@ -97,7 +97,7 @@ class AccessControlAndFilterTests(APITestCase):
         device_response = self.client.post(
             "/api/devices/",
             {
-                "device_type": "glucometer",
+                "device_type": "glucometro",
                 "serial": f"foreign-device-{int(time.time())}",
                 "protocol": "bluetooth",
                 "is_active": True,
@@ -129,7 +129,7 @@ class AccessControlAndFilterTests(APITestCase):
         device_response = self.client.post(
             "/api/devices/",
             {
-                "device_type": "glucometer",
+                "device_type": "glucometro",
                 "serial": f"filter-device-{int(time.time())}",
                 "protocol": "bluetooth",
                 "is_active": True,
@@ -165,7 +165,7 @@ class AccessControlAndFilterTests(APITestCase):
         device_response = self.client.post(
             "/api/devices/",
             {
-                "device_type": "glucometer",
+                "device_type": "glucometro",
                 "serial": f"recommendation-device-{int(time.time())}",
                 "protocol": "bluetooth",
                 "is_active": True,
@@ -201,7 +201,7 @@ class AccessControlAndFilterTests(APITestCase):
         device_response = self.client.post(
             "/api/devices/",
             {
-                "device_type": "glucometer",
+                "device_type": "glucometro",
                 "serial": f"recommendation-failure-device-{int(time.time())}",
                 "protocol": "bluetooth",
                 "is_active": True,
@@ -227,3 +227,284 @@ class AccessControlAndFilterTests(APITestCase):
                 format="json",
             )
         self.assertEqual(measurement_response.status_code, status.HTTP_201_CREATED)
+
+
+class DeviceProfileTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_model = get_user_model()
+
+    def _create_user_and_token(self, username: str) -> tuple[object, str]:
+        user = self.user_model.objects.create_user(
+            username=username, password="StrongPass123!", email=f"{username}@x.com"
+        )
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": username, "password": "StrongPass123!"},
+            format="json",
+        )
+        return user, login_response.data["access"]
+
+    def test_device_profiles_requires_auth(self):
+        response = self.client.get("/api/device-profiles/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_device_profiles_returns_active_profiles(self):
+        DeviceProfile.objects.create(
+            name="Test Oximetro",
+            device_type="oximetro",
+            manufacturer="Yonker",
+            model_name="TEST-PROFILE",
+            protocol="bluetooth",
+            ble_service_uuid="CDEACD80-5235-4C07-8846-93A37EE6B86D",
+            ble_characteristic_uuid="CDEACD81-5235-4C07-8846-93A37EE6B86D",
+            supported_parameters=["spo2", "pulse_rate", "pi_index", "hrv"],
+            is_active=True,
+        )
+        _user, token = self._create_user_and_token("profile_user")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get("/api/device-profiles/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(response.data), 1)
+        profile = response.data[0]
+        self.assertEqual(profile["device_type"], "oximetro")
+        self.assertIn("spo2", profile["supported_parameters"])
+
+
+class CrossValidationTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_model = get_user_model()
+        cls.profile = DeviceProfile.objects.create(
+            name="Cross Oximetro",
+            device_type="oximetro",
+            manufacturer="Yonker",
+            model_name="CROSS-TEST",
+            protocol="bluetooth",
+            supported_parameters=["spo2", "pulse_rate", "pi_index", "hrv"],
+            is_active=True,
+        )
+
+    def _create_user_and_token(self, username: str) -> tuple[object, str]:
+        user = self.user_model.objects.create_user(
+            username=username, password="StrongPass123!", email=f"{username}@x.com"
+        )
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": username, "password": "StrongPass123!"},
+            format="json",
+        )
+        return user, login_response.data["access"]
+
+    def _create_oximeter(self, token: str, serial: str) -> int:
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        resp = self.client.post(
+            "/api/devices/",
+            {"device_type": "oximetro", "serial": serial, "protocol": "bluetooth", "is_active": True},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        return resp.data["id"]
+
+    def test_cross_validation_rejects_incompatible_param(self):
+        _user, token = self._create_user_and_token("cross_reject")
+        device_id = self._create_oximeter(token, f"OX-CROSS-REJ-{int(time.time())}")
+
+        resp = self.client.post(
+            "/api/measurements/",
+            {"device": device_id, "parameter_type": "glucose", "value": 120, "unit": "mg/dL", "measured_at": "2026-02-25T10:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("parameter_type", resp.data)
+
+    def test_cross_validation_allows_compatible_param(self):
+        _user, token = self._create_user_and_token("cross_allow")
+        device_id = self._create_oximeter(token, f"OX-CROSS-OK-{int(time.time())}")
+
+        resp = self.client.post(
+            "/api/measurements/",
+            {"device": device_id, "parameter_type": "spo2", "value": 96, "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+
+class MeasurementBatchTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_model = get_user_model()
+        cls.profile = DeviceProfile.objects.create(
+            name="Batch Oximetro",
+            device_type="oximetro",
+            manufacturer="Yonker",
+            model_name="BATCH-TEST",
+            protocol="bluetooth",
+            supported_parameters=["spo2", "pulse_rate", "pi_index", "hrv"],
+            is_active=True,
+        )
+
+    def _create_user_and_token(self, username: str) -> tuple[object, str]:
+        user = self.user_model.objects.create_user(
+            username=username, password="StrongPass123!", email=f"{username}@x.com"
+        )
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": username, "password": "StrongPass123!"},
+            format="json",
+        )
+        return user, login_response.data["access"]
+
+    def _create_oximeter(self, token: str, serial: str) -> int:
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        resp = self.client.post(
+            "/api/devices/",
+            {"device_type": "oximetro", "serial": serial, "protocol": "bluetooth", "is_active": True},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        return resp.data["id"]
+
+    def test_batch_requires_auth(self):
+        response = self.client.post("/api/measurements/batch/", {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_batch_creates_measurements_and_recommendations(self):
+        user, token = self._create_user_and_token("batch_ok")
+        device_id = self._create_oximeter(token, f"OX-BATCH-OK-{int(time.time())}")
+
+        resp = self.client.post(
+            "/api/measurements/batch/",
+            {
+                "device": device_id,
+                "measured_at": "2026-02-25T10:30:00Z",
+                "readings": [
+                    {"parameter_type": "spo2", "value": "96", "unit": "%"},
+                    {"parameter_type": "pulse_rate", "value": "72", "unit": "bpm"},
+                    {"parameter_type": "pi_index", "value": "3.5", "unit": "%"},
+                    {"parameter_type": "hrv", "value": "45", "unit": "ms"},
+                ],
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(resp.data), 4)
+
+        recs = Recommendation.objects.filter(user=user)
+        self.assertEqual(recs.count(), 4)
+
+    def test_batch_rejects_incompatible_param(self):
+        user, token = self._create_user_and_token("batch_rej")
+        device_id = self._create_oximeter(token, f"OX-BATCH-REJ-{int(time.time())}")
+
+        resp = self.client.post(
+            "/api/measurements/batch/",
+            {
+                "device": device_id,
+                "measured_at": "2026-02-25T10:30:00Z",
+                "readings": [
+                    {"parameter_type": "spo2", "value": "96", "unit": "%"},
+                    {"parameter_type": "glucose", "value": "120", "unit": "mg/dL"},
+                ],
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        from measurements.models import Measurement
+        self.assertEqual(Measurement.objects.filter(user=user).count(), 0)
+
+
+class PhysiologicalRangeValidationTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_model = get_user_model()
+
+    def _create_user_and_token(self, username: str) -> tuple[object, str]:
+        user = self.user_model.objects.create_user(
+            username=username, password="StrongPass123!", email=f"{username}@x.com"
+        )
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": username, "password": "StrongPass123!"},
+            format="json",
+        )
+        return user, login_response.data["access"]
+
+    def _create_device(self, token: str, serial: str, device_type: str = "glucometro") -> int:
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        resp = self.client.post(
+            "/api/devices/",
+            {"device_type": device_type, "serial": serial, "protocol": "bluetooth", "is_active": True},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        return resp.data["id"]
+
+    def test_spo2_zero_rejected(self):
+        _user, token = self._create_user_and_token("physio_spo2")
+        device_id = self._create_device(token, f"PHY-SPO2-{int(time.time())}")
+        resp = self.client.post(
+            "/api/measurements/",
+            {"device": device_id, "parameter_type": "spo2", "value": "0", "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_pulse_rate_zero_rejected(self):
+        _user, token = self._create_user_and_token("physio_pr")
+        device_id = self._create_device(token, f"PHY-PR-{int(time.time())}")
+        resp = self.client.post(
+            "/api/measurements/",
+            {"device": device_id, "parameter_type": "pulse_rate", "value": "0", "unit": "bpm", "measured_at": "2026-02-25T10:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_pi_index_zero_rejected(self):
+        _user, token = self._create_user_and_token("physio_pi")
+        device_id = self._create_device(token, f"PHY-PI-{int(time.time())}")
+        resp = self.client.post(
+            "/api/measurements/",
+            {"device": device_id, "parameter_type": "pi_index", "value": "0", "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_valid_spo2_accepted(self):
+        _user, token = self._create_user_and_token("physio_ok")
+        device_id = self._create_device(token, f"PHY-OK-{int(time.time())}")
+        resp = self.client.post(
+            "/api/measurements/",
+            {"device": device_id, "parameter_type": "spo2", "value": "96", "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_batch_rejects_out_of_range_value(self):
+        DeviceProfile.objects.get_or_create(
+            model_name="PHYSIO-BATCH-TEST",
+            defaults={
+                "name": "Physio Batch Oximetro",
+                "device_type": "oximetro",
+                "manufacturer": "Test",
+                "protocol": "bluetooth",
+                "supported_parameters": ["spo2", "pulse_rate", "pi_index", "hrv"],
+                "is_active": True,
+            },
+        )
+        _user, token = self._create_user_and_token("physio_batch")
+        device_id = self._create_device(token, f"PHY-BATCH-{int(time.time())}", "oximetro")
+        resp = self.client.post(
+            "/api/measurements/batch/",
+            {
+                "device": device_id,
+                "measured_at": "2026-02-25T10:30:00Z",
+                "readings": [
+                    {"parameter_type": "spo2", "value": "96", "unit": "%"},
+                    {"parameter_type": "pulse_rate", "value": "0", "unit": "bpm"},
+                ],
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)

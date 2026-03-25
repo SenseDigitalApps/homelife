@@ -134,6 +134,45 @@ class RulesEngine:
                 return "preventive", f"Systolic blood pressure is elevated ({value:.2f} {unit})."
             return "normal", f"Systolic blood pressure is in expected range ({value:.2f} {unit})."
 
+        if key == "pulse_rate":
+            if value < Decimal("50") or value > Decimal("120"):
+                return (
+                    "critical",
+                    f"Pulse rate is in critical range ({value:.2f} {unit}). Seek urgent medical attention.",
+                )
+            if value < Decimal("60") or value > Decimal("100"):
+                return (
+                    "preventive",
+                    f"Pulse rate is outside normal range ({value:.2f} {unit}). Keep monitoring.",
+                )
+            return "normal", f"Pulse rate is within expected range ({value:.2f} {unit})."
+
+        if key == "pi_index":
+            if value < Decimal("0.3"):
+                return (
+                    "critical",
+                    f"Perfusion index is very low ({value:.2f} {unit}). Check sensor placement or seek attention.",
+                )
+            if value < Decimal("1.0"):
+                return (
+                    "preventive",
+                    f"Perfusion index is low ({value:.2f} {unit}). Verify reading.",
+                )
+            return "normal", f"Perfusion index is adequate ({value:.2f} {unit})."
+
+        if key == "hrv":
+            if value < Decimal("10"):
+                return (
+                    "critical",
+                    f"HRV is very low ({value:.2f} {unit}). May indicate significant physiological stress.",
+                )
+            if value < Decimal("20"):
+                return (
+                    "preventive",
+                    f"HRV is low ({value:.2f} {unit}). Consider stress or fatigue factors.",
+                )
+            return "normal", f"HRV is within adequate range ({value:.2f} {unit})."
+
         if value > Decimal("0"):
             return "normal", f"{parameter_type} recorded successfully ({value:.2f} {unit})."
         return (

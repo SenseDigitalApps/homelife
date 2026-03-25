@@ -104,11 +104,27 @@ Esperado:
 - `GET /api/recommendations/` -> lista recomendaciones del usuario
 - Nuevas recomendaciones se generan automaticamente al crear mediciones
 
+#### Catalogo de dispositivos (Device Profiles)
+- `GET /api/device-profiles/` -> lista perfiles de dispositivos soportados por el sistema
+- Retorna UUIDs BLE, parametros soportados, fabricante y modelo
+- Sin token: `401`
+
+#### Mediciones batch
+- `POST /api/measurements/batch/` -> crea multiples mediciones de una lectura de dispositivo
+- Cuerpo:
+  - `device`: ID del dispositivo
+  - `measured_at`: timestamp de la lectura
+  - `readings`: array de objetos con `parameter_type`, `value`, `unit`
+- Esperado: `201` con array de mediciones creadas + recomendaciones generadas automaticamente
+- Validacion cruzada: si un `parameter_type` no es compatible con el tipo de dispositivo -> `400`
+- Ejemplo: enviar `glucose` desde un oximetro -> `400` con mensaje de parametros soportados
+
 ## 4) Manejo de errores esperado
 
 - No autorizado (token ausente/invalido): `401`
 - Errores de validacion (cuerpo invalido o regla de negocio): `400`
 - Refresh en blacklist tras logout: `401`
+- Parametro incompatible con tipo de dispositivo: `400` (validacion cruzada contra DeviceProfile)
 - Falla de conectividad de DB en health: `"db": "fail"` (el endpoint sigue respondiendo)
 
 ## 5) Validacion de tablas en base de datos
@@ -122,6 +138,7 @@ docker compose exec db psql -U medsync -d medsync -c "\dt"
 Tablas core esperadas:
 - `auth_user`
 - `devices_device`
+- `devices_deviceprofile`
 - `measurements_measurement`
 - `recommendations_recommendation`
 - `reports_report`
@@ -151,5 +168,12 @@ El sistema fue probado extremo a extremo en Docker:
 - Crear report (rango invalido) -> `400`
 - Logout -> `205`
 - Refresh con token en blacklist -> `401`
+- `GET /api/device-profiles/` -> retorna perfil del oximetro YK-67B1
+- Batch de oximetro (spo2, pulse_rate, pi_index, hrv) -> `201`, 4 mediciones + 4 recomendaciones
+- Batch con parametro incompatible (glucose en oximetro) -> `400`
+- Validacion cruzada individual (glucose en oximetro) -> `400`
+- Medicion compatible (spo2 en oximetro) -> `201`
+
+24 tests automatizados pasando (core + recommendations).
 
 Actualmente, todos los comportamientos esperados estan funcionando.

@@ -444,6 +444,69 @@
           }
         }
       ]
+    },
+    {
+      "name": "Catalogo de dispositivos",
+      "item": [
+        {
+          "name": "Listar perfiles de dispositivos soportados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/device-profiles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "device-profiles"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mediciones batch (oximetro)",
+      "item": [
+        {
+          "name": "Crear lectura completa de oximetro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device\": {{device_id}},\n  \"measured_at\": \"2026-02-25T10:30:00Z\",\n  \"readings\": [\n    {\"parameter_type\": \"spo2\", \"value\": \"96\", \"unit\": \"%\"},\n    {\"parameter_type\": \"pulse_rate\", \"value\": \"72\", \"unit\": \"bpm\"},\n    {\"parameter_type\": \"pi_index\", \"value\": \"3.5\", \"unit\": \"%\"},\n    {\"parameter_type\": \"hrv\", \"value\": \"45\", \"unit\": \"ms\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/measurements/batch/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                "batch"
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 }

@@ -4,12 +4,24 @@ from django.db import models
 from devices.models import Device
 
 
+class ParameterType(models.TextChoices):
+    GLUCOSE = "glucose", "Glucosa"
+    SPO2 = "spo2", "SpO2"
+    PULSE_RATE = "pulse_rate", "Frecuencia de pulso"
+    PI_INDEX = "pi_index", "Índice de perfusión"
+    HRV = "hrv", "Variabilidad de frecuencia cardíaca"
+    BP_SYSTOLIC = "bp_systolic", "Presión sistólica"
+    BP_DIASTOLIC = "bp_diastolic", "Presión diastólica"
+    TEMP = "temp", "Temperatura"
+    OTRO = "otro", "Otro"
+
+
 class Measurement(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="measurements"
     )
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="measurements")
-    parameter_type = models.CharField(max_length=50)
+    parameter_type = models.CharField(max_length=50, choices=ParameterType.choices)
     value = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=20)
     measured_at = models.DateTimeField()

@@ -31,7 +31,7 @@ El objetivo técnico de esta fase fue construir una API robusta para autenticaci
 - `Reports`: creación y consulta de reportes con validación de rango de fechas.
 
 ### Motor de recomendaciones
-- El motor se ejecuta en tiempo real cada vez que se registra una medición nueva.
+4- El motor se ejecuta en tiempo real cada vez que se registra una medición nueva.
 - Flujo funcional implementado:
   1. Se recibe la medición (`parameter_type`, `value`, `unit`, `measured_at`).
   2. El sistema evalúa primero el motor configurado.
