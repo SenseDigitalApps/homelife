@@ -67,6 +67,52 @@ class AuthFlowTests(APITestCase):
         )
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_register_without_profile_creates_empty_profile(self):
+        from users.models import Profile
+
+        username = f"no_profile_{int(time.time())}"
+        resp = self.client.post(
+            "/api/auth/register/",
+            {"username": username, "email": f"{username}@x.com", "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        user = get_user_model().objects.get(username=username)
+        self.assertTrue(Profile.objects.filter(user=user).exists())
+        profile = user.profile
+        self.assertIsNone(profile.birth_date)
+        self.assertEqual(profile.biological_sex, "")
+
+    def test_register_with_profile_saves_health_data(self):
+        from users.models import Profile
+
+        username = f"with_profile_{int(time.time())}"
+        resp = self.client.post(
+            "/api/auth/register/",
+            {
+                "username": username,
+                "email": f"{username}@x.com",
+                "password": "StrongPass123!",
+                "profile": {
+                    "birth_date": "1990-05-15",
+                    "biological_sex": "masculino",
+                    "initial_weight_kg": "75.50",
+                    "height_cm": "175.0",
+                    "activity_level": "moderado",
+                    "preexisting_conditions": "Hipertension arterial",
+                },
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        profile = get_user_model().objects.get(username=username).profile
+        self.assertEqual(str(profile.birth_date), "1990-05-15")
+        self.assertEqual(profile.biological_sex, "masculino")
+        self.assertEqual(float(profile.initial_weight_kg), 75.50)
+        self.assertEqual(float(profile.height_cm), 175.0)
+        self.assertEqual(profile.activity_level, "moderado")
+        self.assertEqual(profile.preexisting_conditions, "Hipertension arterial")
+
     def test_private_endpoint_requires_authentication(self):
         response = self.client.get("/api/devices/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
