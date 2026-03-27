@@ -117,6 +117,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
@@ -188,7 +189,7 @@ def validate_production_settings() -> None:
 
 if not DEBUG:
     validate_production_settings()
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", default=False)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = os.getenv("SECURE_COOKIE_SAMESITE", "Lax")

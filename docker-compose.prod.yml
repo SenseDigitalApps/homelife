@@ -29,6 +29,8 @@ services:
       POSTGRES_PORT: 5432
     expose:
       - "8000"
+    volumes:
+      - static_files:/app/app/staticfiles
     depends_on:
       db:
         condition: service_healthy
@@ -44,6 +46,7 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/certbot/conf:/etc/letsencrypt:ro
       - ./nginx/certbot/www:/var/www/certbot:ro
+      - static_files:/app/staticfiles:ro
     depends_on:
       - api
 
@@ -61,3 +64,4 @@ services:
 
 volumes:
   postgres_data:
+  static_files:
