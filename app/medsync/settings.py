@@ -190,8 +190,8 @@ def validate_production_settings() -> None:
 if not DEBUG:
     validate_production_settings()
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", default=False)
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", default=False)
+    CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", default=False)
     SESSION_COOKIE_SAMESITE = os.getenv("SECURE_COOKIE_SAMESITE", "Lax")
     CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax")
     CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", default=[])

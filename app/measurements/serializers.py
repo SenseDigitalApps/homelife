@@ -9,6 +9,8 @@ PHYSIOLOGICAL_RANGES = {
     "pulse_rate": (Decimal("20"), Decimal("250")),
     "pi_index": (Decimal("0.1"), Decimal("20")),
     "hrv": (Decimal("1"), Decimal("300")),
+    "bp_systolic": (Decimal("60"), Decimal("260")),
+    "bp_diastolic": (Decimal("30"), Decimal("160")),
 }
 
 

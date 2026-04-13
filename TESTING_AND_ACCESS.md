@@ -177,3 +177,12 @@ El sistema fue probado extremo a extremo en Docker:
 24 tests automatizados pasando (core + recommendations).
 
 Actualmente, todos los comportamientos esperados estan funcionando.
+
+
+SECRET KEY
+3GaqykQTj7h55hjNFjxvvkmpitXfPlEWL7BCIt3cbBU2hRHAI7QZ8jtKL_kjWilLKqU
+
+DB PASSWORD
+izVlrHniTPyFEa9di_hrWRTh8zVi6ICI
+
+

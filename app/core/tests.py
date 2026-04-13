@@ -117,6 +117,42 @@ class AuthFlowTests(APITestCase):
         response = self.client.get("/api/devices/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_login_with_email_works(self):
+        username = f"email_login_{int(time.time())}"
+        email = f"{username}@example.com"
+        password = "StrongPass123!"
+        register_response = self.client.post(
+            "/api/auth/register/",
+            {"username": username, "email": email, "password": password},
+            format="json",
+        )
+        self.assertEqual(register_response.status_code, status.HTTP_201_CREATED)
+
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": email, "password": password},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", login_response.data)
+
+    def test_login_with_duplicate_email_requires_username(self):
+        user_model = get_user_model()
+        password = "StrongPass123!"
+        shared_email = f"dup_{int(time.time())}@example.com"
+        user_model.objects.create_user(username=f"user_a_{int(time.time())}", email=shared_email, password=password)
+        user_model.objects.create_user(
+            username=f"user_b_{int(time.time()) + 1}", email=shared_email, password=password
+        )
+
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": shared_email, "password": password},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", login_response.data)
+
 
 class AccessControlAndFilterTests(APITestCase):
     @classmethod

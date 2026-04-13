@@ -5,7 +5,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .serializers import LogoutSerializer, RegisterResponseSerializer, RegisterSerializer
+from .serializers import (
+    EmailOrUsernameTokenObtainPairSerializer,
+    LogoutSerializer,
+    RegisterResponseSerializer,
+    RegisterSerializer,
+)
 
 
 @extend_schema_view(
@@ -28,6 +33,7 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = EmailOrUsernameTokenObtainPairSerializer
 
 
 class RefreshView(TokenRefreshView):

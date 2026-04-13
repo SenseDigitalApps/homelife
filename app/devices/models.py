@@ -40,6 +40,8 @@ class DeviceProfile(models.Model):
     model_name = models.CharField(max_length=100)
     protocol = models.CharField(max_length=20, choices=Device.Protocol.choices)
     ble_service_uuid = models.CharField(max_length=64, blank=True, default="")
+    ble_notify_characteristic_uuid = models.CharField(max_length=64, blank=True, default="")
+    ble_write_characteristic_uuid = models.CharField(max_length=64, blank=True, default="")
     ble_characteristic_uuid = models.CharField(max_length=64, blank=True, default="")
     supported_parameters = models.JSONField(default=list)
     is_active = models.BooleanField(default=True)

@@ -30,6 +30,8 @@ class DeviceProfileSerializer(serializers.ModelSerializer):
             "model_name",
             "protocol",
             "ble_service_uuid",
+            "ble_notify_characteristic_uuid",
+            "ble_write_characteristic_uuid",
             "ble_characteristic_uuid",
             "supported_parameters",
             "is_active",

@@ -1,0 +1,568 @@
+{
+  "info": {
+    "name": "MedSync API \u2014 AWS Staging",
+    "_postman_id": "b2e1a7c3-9d44-4a8e-b1f0-3c5e8d9f2a71",
+    "description": "Coleccion de endpoints para MedSync backend desplegado en AWS (54.173.55.73).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://54.173.55.73"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "device_id",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Sistema",
+      "item": [
+        {
+          "name": "Welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Schema OpenAPI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/schema/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "schema",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Docs Swagger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/docs/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "docs",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Autenticacion",
+      "item": [
+        {
+          "name": "Registro (con perfil de salud)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser1\",\n  \"email\": \"testuser1@example.com\",\n  \"password\": \"Admin1234!\",\n  \"profile\": {\n    \"birth_date\": \"1990-05-15\",\n    \"biological_sex\": \"masculino\",\n    \"initial_weight_kg\": \"75.50\",\n    \"height_cm\": \"175.0\",\n    \"activity_level\": \"moderado\",\n    \"preexisting_conditions\": \"Hipertension arterial\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.access) pm.collectionVariables.set('access_token', data.access);",
+                  "  if (data.refresh) pm.collectionVariables.set('refresh_token', data.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser1\",\n  \"password\": \"Admin1234!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.access) pm.collectionVariables.set('access_token', data.access);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dispositivos",
+      "item": [
+        {
+          "name": "Crear dispositivo (oximetro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) pm.collectionVariables.set('device_id', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_type\": \"oximetro\",\n  \"serial\": \"OX-AWS-001\",\n  \"protocol\": \"bluetooth\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/devices/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "devices",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar dispositivos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/devices/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "devices",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogo de dispositivos",
+      "item": [
+        {
+          "name": "Listar perfiles soportados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/device-profiles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "device-profiles",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mediciones",
+      "item": [
+        {
+          "name": "Crear medicion individual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device\": {{device_id}},\n  \"parameter_type\": \"spo2\",\n  \"value\": \"96.5\",\n  \"unit\": \"%\",\n  \"measured_at\": \"2026-03-27T18:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/measurements/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar mediciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/measurements/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mediciones batch (oximetro)",
+      "item": [
+        {
+          "name": "Lectura completa de oximetro (4 params)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device\": {{device_id}},\n  \"measured_at\": \"2026-03-27T18:30:00Z\",\n  \"readings\": [\n    {\"parameter_type\": \"spo2\", \"value\": \"96\", \"unit\": \"%\"},\n    {\"parameter_type\": \"pulse_rate\", \"value\": \"72\", \"unit\": \"bpm\"},\n    {\"parameter_type\": \"pi_index\", \"value\": \"3.5\", \"unit\": \"%\"},\n    {\"parameter_type\": \"hrv\", \"value\": \"45\", \"unit\": \"ms\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/measurements/batch/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                "batch",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lectura con parametro incompatible (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device\": {{device_id}},\n  \"measured_at\": \"2026-03-27T18:35:00Z\",\n  \"readings\": [\n    {\"parameter_type\": \"spo2\", \"value\": \"96\", \"unit\": \"%\"},\n    {\"parameter_type\": \"glucose\", \"value\": \"120\", \"unit\": \"mg/dL\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/measurements/batch/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                "batch",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recomendaciones",
+      "item": [
+        {
+          "name": "Listar recomendaciones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/recommendations/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "recommendations",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "Crear reporte",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date_from\": \"2026-03-01\",\n  \"date_to\": \"2026-03-27\",\n  \"file_url\": \"https://example.com/reports/reporte-1.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reports/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar reportes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reports/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
