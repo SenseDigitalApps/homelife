@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "MedSync API \u2014 AWS Staging",
+    "name": "MedSync API — AWS Staging",
     "_postman_id": "b2e1a7c3-9d44-4a8e-b1f0-3c5e8d9f2a71",
     "description": "Coleccion de endpoints para MedSync backend desplegado en AWS (54.173.55.73).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -20,6 +20,10 @@
     },
     {
       "key": "device_id",
+      "value": "1"
+    },
+    {
+      "key": "device_id_bp",
       "value": "1"
     }
   ],
@@ -318,6 +322,51 @@
               ]
             }
           }
+        },
+        {
+          "name": "Crear dispositivo (tensiometro DBP-6296B)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.id) pm.collectionVariables.set('device_id_bp', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_type\": \"tensiometro\",\n  \"serial\": \"DBP-AWS-001\",\n  \"protocol\": \"bluetooth\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/devices/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "devices",
+                ""
+              ]
+            }
+          }
         }
       ]
     },
@@ -345,6 +394,30 @@
                 ""
               ]
             }
+          }
+        },
+        {
+          "name": "Verificar perfil DBP-6296B",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/device-profiles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "device-profiles",
+                ""
+              ]
+            },
+            "description": "Revisa en la respuesta el perfil DBP-6296B con UUIDs FFF0/FFF1/FFF2 y supported_parameters de tensiometro."
           }
         }
       ]
@@ -557,6 +630,75 @@
               "path": [
                 "api",
                 "reports",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mediciones batch (tensiometro DBP-6296B)",
+      "item": [
+        {
+          "name": "Lectura completa de tensiometro (3 params)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device\": {{device_id_bp}},\n  \"measured_at\": \"2026-04-13T15:20:00Z\",\n  \"readings\": [\n    {\"parameter_type\": \"bp_systolic\", \"value\": \"129\", \"unit\": \"mmHg\"},\n    {\"parameter_type\": \"bp_diastolic\", \"value\": \"81\", \"unit\": \"mmHg\"},\n    {\"parameter_type\": \"pulse_rate\", \"value\": \"68\", \"unit\": \"bpm\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/measurements/batch/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                "batch",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lectura fuera de rango (debe fallar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device\": {{device_id_bp}},\n  \"measured_at\": \"2026-04-13T15:21:00Z\",\n  \"readings\": [\n    {\"parameter_type\": \"bp_systolic\", \"value\": \"420\", \"unit\": \"mmHg\"},\n    {\"parameter_type\": \"bp_diastolic\", \"value\": \"81\", \"unit\": \"mmHg\"},\n    {\"parameter_type\": \"pulse_rate\", \"value\": \"68\", \"unit\": \"bpm\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/measurements/batch/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "measurements",
+                "batch",
                 ""
               ]
             }

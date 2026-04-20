@@ -5,6 +5,7 @@ from rest_framework import serializers
 from .models import Measurement, ParameterType
 
 PHYSIOLOGICAL_RANGES = {
+    "glucose": (Decimal("20"), Decimal("600")),
     "spo2": (Decimal("70"), Decimal("100")),
     "pulse_rate": (Decimal("20"), Decimal("250")),
     "pi_index": (Decimal("0.1"), Decimal("20")),
