@@ -30,6 +30,24 @@ class DeviceListCreateView(generics.ListCreateAPIView):
 
 
 @extend_schema_view(
+    delete=extend_schema(
+        tags=["devices"],
+        responses={
+            204: OpenApiResponse(description="Device deleted"),
+            401: OpenApiResponse(description="Unauthorized"),
+            404: OpenApiResponse(description="Not found"),
+        },
+    ),
+)
+class DeviceDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = DeviceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Device.objects.filter(user=self.request.user)
+
+
+@extend_schema_view(
     get=extend_schema(
         tags=["device-profiles"],
         responses={
