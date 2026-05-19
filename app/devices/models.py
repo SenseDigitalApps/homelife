@@ -6,6 +6,7 @@ class DeviceType(models.TextChoices):
     GLUCOMETRO = "glucometro", "Glucómetro"
     OXIMETRO = "oximetro", "Oxímetro"
     TENSIOMETRO = "tensiometro", "Tensiómetro"
+    BASCULA = "bascula", "Báscula"
     TERMOMETRO = "termometro", "Termómetro"
     ECG = "ecg", "ECG"
     OTRO = "otro", "Otro"

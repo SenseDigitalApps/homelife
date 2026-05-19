@@ -6,6 +6,14 @@ from .models import Measurement, ParameterType
 
 PHYSIOLOGICAL_RANGES = {
     "glucose": (Decimal("20"), Decimal("600")),
+    "weight": (Decimal("20"), Decimal("220")),
+    "impedance": (Decimal("200"), Decimal("1100")),
+    "body_fat_pct": (Decimal("1"), Decimal("75")),
+    "body_water_pct": (Decimal("20"), Decimal("80")),
+    "muscle_mass": (Decimal("10"), Decimal("120")),
+    "bmi": (Decimal("10"), Decimal("70")),
+    "bmr": (Decimal("500"), Decimal("4000")),
+    "visceral_fat": (Decimal("1"), Decimal("59")),
     "spo2": (Decimal("70"), Decimal("100")),
     "pulse_rate": (Decimal("20"), Decimal("250")),
     "pi_index": (Decimal("0.1"), Decimal("20")),

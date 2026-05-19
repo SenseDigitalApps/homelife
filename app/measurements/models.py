@@ -6,6 +6,14 @@ from devices.models import Device
 
 class ParameterType(models.TextChoices):
     GLUCOSE = "glucose", "Glucosa"
+    WEIGHT = "weight", "Peso"
+    IMPEDANCE = "impedance", "Impedancia"
+    BODY_FAT_PCT = "body_fat_pct", "Grasa corporal %"
+    BODY_WATER_PCT = "body_water_pct", "Agua corporal %"
+    MUSCLE_MASS = "muscle_mass", "Masa muscular"
+    BMI = "bmi", "Índice de masa corporal"
+    BMR = "bmr", "Metabolismo basal"
+    VISCERAL_FAT = "visceral_fat", "Grasa visceral"
     SPO2 = "spo2", "SpO2"
     PULSE_RATE = "pulse_rate", "Frecuencia de pulso"
     PI_INDEX = "pi_index", "Índice de perfusión"
