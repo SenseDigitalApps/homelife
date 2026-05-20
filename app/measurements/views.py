@@ -113,7 +113,7 @@ class MeasurementBatchView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        batch_serializer = MeasurementBatchSerializer(data=request.data)
+        batch_serializer = MeasurementBatchSerializer(data=request.data, context={"request": request})
         batch_serializer.is_valid(raise_exception=True)
 
         device = batch_serializer.validated_data["device"]
@@ -143,8 +143,25 @@ class MeasurementBatchView(APIView):
                     )
 
         created_measurements = []
+        newly_created_measurements = []
         with transaction.atomic():
             for reading in readings:
+                existing = (
+                    Measurement.objects.filter(
+                        user=request.user,
+                        device=device,
+                        parameter_type=reading["parameter_type"],
+                        value=reading["value"],
+                        unit=reading["unit"],
+                        measured_at=measured_at,
+                    )
+                    .order_by("-created_at")
+                    .first()
+                )
+                if existing is not None:
+                    created_measurements.append(existing)
+                    continue
+
                 measurement = Measurement.objects.create(
                     user=request.user,
                     device=device,
@@ -154,8 +171,9 @@ class MeasurementBatchView(APIView):
                     measured_at=measured_at,
                 )
                 created_measurements.append(measurement)
+                newly_created_measurements.append(measurement)
 
-        for measurement in created_measurements:
+        for measurement in newly_created_measurements:
             try:
                 result = generate_immediate_recommendation(
                     parameter_type=measurement.parameter_type,

@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .serializers import (
     EmailOrUsernameTokenObtainPairSerializer,
     LogoutSerializer,
+    ProfileSerializer,
     RegisterResponseSerializer,
     RegisterSerializer,
 )
@@ -64,3 +65,28 @@ class LogoutView(APIView):
         except Exception as exc:
             raise serializers.ValidationError({"refresh": "Invalid refresh token."}) from exc
         return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=["auth"],
+        responses={
+            200: OpenApiResponse(description="Current user profile"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+    )
+)
+class CurrentUserProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = getattr(request.user, "profile", None)
+        profile_data = ProfileSerializer(profile).data if profile else None
+        return Response(
+            {
+                "username": request.user.username,
+                "email": request.user.email,
+                "profile": profile_data,
+            },
+            status=status.HTTP_200_OK,
+        )

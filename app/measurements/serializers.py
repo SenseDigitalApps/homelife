@@ -57,6 +57,26 @@ class MeasurementSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         validate_physiological_range(attrs.get("parameter_type", ""), attrs.get("value", Decimal("0")))
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        device = attrs.get("device")
+        parameter_type = attrs.get("parameter_type")
+        value = attrs.get("value")
+        unit = attrs.get("unit")
+        measured_at = attrs.get("measured_at")
+        if user and getattr(user, "is_authenticated", False):
+            duplicate_exists = Measurement.objects.filter(
+                user=user,
+                device=device,
+                parameter_type=parameter_type,
+                value=value,
+                unit=unit,
+                measured_at=measured_at,
+            ).exists()
+            if duplicate_exists:
+                raise serializers.ValidationError(
+                    {"detail": "Duplicate measurement payload for same device/parameter/timestamp."}
+                )
         return attrs
 
 

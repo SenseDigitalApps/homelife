@@ -12,7 +12,7 @@ from devices.views import DeviceDetailView, DeviceListCreateView, DeviceProfileL
 from measurements.views import MeasurementBatchView, MeasurementListCreateView
 from recommendations.views import RecommendationListView
 from reports.views import ReportListCreateView
-from users.views import LoginView, LogoutView, RefreshView, RegisterView
+from users.views import CurrentUserProfileView, LoginView, LogoutView, RefreshView, RegisterView
 
 
 @extend_schema(
@@ -36,6 +36,7 @@ urlpatterns = [
     path("api/auth/login/", LoginView.as_view(), name="auth-login"),
     path("api/auth/refresh/", RefreshView.as_view(), name="auth-refresh"),
     path("api/auth/logout/", LogoutView.as_view(), name="auth-logout"),
+    path("api/auth/me/", CurrentUserProfileView.as_view(), name="auth-me"),
     path("api/devices/", DeviceListCreateView.as_view(), name="devices-list-create"),
     path("api/devices/<int:pk>/", DeviceDetailView.as_view(), name="devices-detail"),
     path("api/device-profiles/", DeviceProfileListView.as_view(), name="device-profiles-list"),
