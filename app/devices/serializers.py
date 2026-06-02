@@ -1,9 +1,16 @@
 from rest_framework import serializers
 
-from .models import Device, DeviceProfile
+from .models import Device, DeviceProfile, DeviceType
 
 
 class DeviceSerializer(serializers.ModelSerializer):
+    def validate_device_type(self, value: str) -> str:
+        if value == DeviceType.BASCULA:
+            raise serializers.ValidationError(
+                "La integración de báscula está temporalmente pausada."
+            )
+        return value
+
     class Meta:
         model = Device
         fields = (

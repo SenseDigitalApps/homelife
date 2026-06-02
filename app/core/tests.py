@@ -353,6 +353,83 @@ class DeviceProfileTests(APITestCase):
         self.assertEqual(profile["device_type"], "oximetro")
         self.assertIn("spo2", profile["supported_parameters"])
 
+    def test_device_profiles_excludes_bascula(self):
+        DeviceProfile.objects.create(
+            name="Test Bascula",
+            device_type="bascula",
+            manufacturer="JK",
+            model_name="JK-100",
+            protocol="bluetooth",
+            supported_parameters=["weight"],
+            is_active=True,
+        )
+        _user, token = self._create_user_and_token("profile_exclude_scale")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get("/api/device-profiles/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(all(item["device_type"] != "bascula" for item in response.data))
+
+
+class DeviceIsolationTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_model = get_user_model()
+
+    def _create_user_and_token(self, username: str) -> tuple[object, str]:
+        user = self.user_model.objects.create_user(
+            username=username, password="StrongPass123!", email=f"{username}@x.com"
+        )
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": username, "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        return user, login_response.data["access"]
+
+    def test_rejects_bascula_device_creation(self):
+        _user, token = self._create_user_and_token("scale_blocked")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.post(
+            "/api/devices/",
+            {
+                "device_type": "bascula",
+                "serial": f"SCALE-{int(time.time())}",
+                "protocol": "bluetooth",
+                "is_active": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("device_type", response.data)
+
+    def test_list_devices_excludes_bascula(self):
+        user, token = self._create_user_and_token("scale_hidden")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        Device.objects.create(
+            user=user,
+            device_type="bascula",
+            serial=f"SCALE-HIDDEN-{int(time.time())}",
+            protocol="bluetooth",
+            is_active=True,
+        )
+        Device.objects.create(
+            user=user,
+            device_type="oximetro",
+            serial=f"OX-VISIBLE-{int(time.time())}",
+            protocol="bluetooth",
+            is_active=True,
+        )
+
+        response = self.client.get("/api/devices/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(all(item["device_type"] != "bascula" for item in response.data))
+        self.assertTrue(any(item["device_type"] == "oximetro" for item in response.data))
+
 
 class CrossValidationTests(APITestCase):
     @classmethod

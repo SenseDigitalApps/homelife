@@ -1,7 +1,7 @@
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import generics, permissions
 
-from .models import Device, DeviceProfile
+from .models import Device, DeviceProfile, DeviceType
 from .serializers import DeviceProfileSerializer, DeviceSerializer
 
 
@@ -23,7 +23,9 @@ class DeviceListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Device.objects.filter(user=self.request.user)
+        return Device.objects.filter(user=self.request.user).exclude(
+            device_type=DeviceType.BASCULA
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -44,7 +46,9 @@ class DeviceDetailView(generics.RetrieveDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Device.objects.filter(user=self.request.user)
+        return Device.objects.filter(user=self.request.user).exclude(
+            device_type=DeviceType.BASCULA
+        )
 
 
 @extend_schema_view(
@@ -61,4 +65,6 @@ class DeviceProfileListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return DeviceProfile.objects.filter(is_active=True)
+        return DeviceProfile.objects.filter(is_active=True).exclude(
+            device_type=DeviceType.BASCULA
+        )
