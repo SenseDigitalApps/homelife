@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from core.health import health_check
 from devices.views import DeviceDetailView, DeviceListCreateView, DeviceProfileListView
 from measurements.views import MeasurementBatchView, MeasurementListCreateView
-from recommendations.views import RecommendationListView
+from recommendations.views import RecommendationListView, WeeklyDiagnosticListView
 from reports.views import ReportListCreateView
 from users.views import CurrentUserProfileView, LoginView, LogoutView, RefreshView, RegisterView
 
@@ -44,6 +44,7 @@ urlpatterns = [
     path("api/measurements/batch/", MeasurementBatchView.as_view(), name="measurements-batch"),
     path("api/reports/", ReportListCreateView.as_view(), name="reports-list-create"),
     path("api/recommendations/", RecommendationListView.as_view(), name="recommendations-list"),
+    path("api/diagnostics/weekly/", WeeklyDiagnosticListView.as_view(), name="weekly-diagnostics-list"),
     path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="api-docs"),
 ]

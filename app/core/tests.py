@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from devices.models import Device, DeviceProfile
-from recommendations.models import Recommendation
+from recommendations.models import PeriodicDiagnostic, Recommendation
 
 
 class SmokeApiTests(APITestCase):
@@ -272,8 +272,10 @@ class AccessControlAndFilterTests(APITestCase):
         measurement_id = measurement_response.data["id"]
 
         recommendation = Recommendation.objects.get(measurement_id=measurement_id, user_id=user.id)
-        self.assertIn(recommendation.engine, {"rules", "ai"})
+        self.assertIn(recommendation.engine, {"rules", "algorithmic"})
         self.assertIn(recommendation.level, {"normal", "preventive", "critical"})
+        self.assertEqual(recommendation.kind, "immediate")
+        self.assertEqual(recommendation.device_type, "glucometro")
         self.assertTrue(recommendation.text)
 
     def test_measurement_creation_survives_recommendation_failure(self):
@@ -349,7 +351,7 @@ class DeviceProfileTests(APITestCase):
         response = self.client.get("/api/device-profiles/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
-        profile = response.data[0]
+        profile = next(item for item in response.data if item["device_type"] == "oximetro")
         self.assertEqual(profile["device_type"], "oximetro")
         self.assertIn("spo2", profile["supported_parameters"])
 
@@ -602,7 +604,7 @@ class PhysiologicalRangeValidationTests(APITestCase):
 
     def test_spo2_zero_rejected(self):
         _user, token = self._create_user_and_token("physio_spo2")
-        device_id = self._create_device(token, f"PHY-SPO2-{int(time.time())}")
+        device_id = self._create_device(token, f"PHY-SPO2-{int(time.time())}", "oximetro")
         resp = self.client.post(
             "/api/measurements/",
             {"device": device_id, "parameter_type": "spo2", "value": "0", "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
@@ -612,7 +614,7 @@ class PhysiologicalRangeValidationTests(APITestCase):
 
     def test_pulse_rate_zero_rejected(self):
         _user, token = self._create_user_and_token("physio_pr")
-        device_id = self._create_device(token, f"PHY-PR-{int(time.time())}")
+        device_id = self._create_device(token, f"PHY-PR-{int(time.time())}", "oximetro")
         resp = self.client.post(
             "/api/measurements/",
             {"device": device_id, "parameter_type": "pulse_rate", "value": "0", "unit": "bpm", "measured_at": "2026-02-25T10:00:00Z"},
@@ -622,7 +624,7 @@ class PhysiologicalRangeValidationTests(APITestCase):
 
     def test_pi_index_zero_rejected(self):
         _user, token = self._create_user_and_token("physio_pi")
-        device_id = self._create_device(token, f"PHY-PI-{int(time.time())}")
+        device_id = self._create_device(token, f"PHY-PI-{int(time.time())}", "oximetro")
         resp = self.client.post(
             "/api/measurements/",
             {"device": device_id, "parameter_type": "pi_index", "value": "0", "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
@@ -632,7 +634,7 @@ class PhysiologicalRangeValidationTests(APITestCase):
 
     def test_valid_spo2_accepted(self):
         _user, token = self._create_user_and_token("physio_ok")
-        device_id = self._create_device(token, f"PHY-OK-{int(time.time())}")
+        device_id = self._create_device(token, f"PHY-OK-{int(time.time())}", "oximetro")
         resp = self.client.post(
             "/api/measurements/",
             {"device": device_id, "parameter_type": "spo2", "value": "96", "unit": "%", "measured_at": "2026-02-25T10:00:00Z"},
@@ -667,3 +669,40 @@ class PhysiologicalRangeValidationTests(APITestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class WeeklyDiagnosticApiTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_model = get_user_model()
+
+    def _create_user_and_token(self, username: str) -> tuple[object, str]:
+        user = self.user_model.objects.create_user(
+            username=username, password="StrongPass123!", email=f"{username}@x.com"
+        )
+        login_response = self.client.post(
+            "/api/auth/login/",
+            {"username": username, "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        return user, login_response.data["access"]
+
+    def test_weekly_diagnostics_endpoint_returns_user_results(self):
+        user, token = self._create_user_and_token("weekly_diag_user")
+        PeriodicDiagnostic.objects.create(
+            user=user,
+            device_type="glucometro",
+            period_start="2026-06-01",
+            period_end="2026-06-07",
+            frequency="weekly",
+            level="preventive",
+            summary="Resumen de prueba",
+            recommended_action="Accion de prueba",
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+        response = self.client.get("/api/diagnostics/weekly/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["device_type"], "glucometro")

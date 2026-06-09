@@ -85,10 +85,7 @@ class MeasurementListCreateView(generics.ListCreateAPIView):
 
         try:
             result = generate_immediate_recommendation(
-                parameter_type=measurement.parameter_type,
-                value=measurement.value,
-                unit=measurement.unit,
-                prefer_ai=True,
+                measurement=measurement,
             )
             payload = build_recommendation_payload(
                 user_id=self.request.user.id,
@@ -176,10 +173,7 @@ class MeasurementBatchView(APIView):
         for measurement in newly_created_measurements:
             try:
                 result = generate_immediate_recommendation(
-                    parameter_type=measurement.parameter_type,
-                    value=measurement.value,
-                    unit=measurement.unit,
-                    prefer_ai=True,
+                    measurement=measurement,
                 )
                 payload = build_recommendation_payload(
                     user_id=request.user.id,
